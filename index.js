@@ -32,25 +32,31 @@ async function run(){
         })
         app.post('/orders',async(req,res)=>{
             const order=req.body;
-            const insertOrder=await partsCollection.insertOne(order);
-            res.send(insertOrder);
+            const insertOrder=await orderCollection.insertOne(order);
+            res.send({success:true});
         })
 
         app.put("/parts/:id", async (req, res) => {
             const id = req.params.id;
             const newQuantity = req.body.quantity;
-            console.log(newQuantity);
             const filter = { _id: ObjectId(id) }
             const option = { upsert: true };
-            const updateQuantity = {
-                $set: {
-                    quantity: newQuantity
+            if(newQuantity>0){
+                const updateQuantity = {
+                    $set: {
+                        quantity: newQuantity
+    
+                    }
+    
+                };
+                const update = await partsCollection.updateOne(filter, updateQuantity)
+                res.send({success:true})
 
-                }
-
-            };
-            const update = await partsCollection.updateOne(filter, updateQuantity, option)
-            res.send(update)
+            }
+            else{
+                res.send({error:"Quantity cannot be negative"})
+            }
+            
         })
 
     }
