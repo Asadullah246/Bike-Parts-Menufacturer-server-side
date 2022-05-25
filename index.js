@@ -20,15 +20,30 @@ async function run(){
         await client.connect();
         const partsCollection = client.db("bikePartsData").collection("parts");
         const orderCollection = client.db("bikePartsData").collection("orders");
+
         app.get('/parts', async (req, res) => {
             const parts=await partsCollection.find({}).toArray();
             res.send(parts);
         })
+        app.post('/parts', (req, res)=>{
+            const newPart=req.body;
+            console.log(newPart);
+            partsCollection.insertOne(newPart);
+            res.send(newPart);
+        })
+        app.post('/parts')
         app.get('/parts/:id',async(req,res)=>{
             const id=req.params.id;
             const query={_id:ObjectId(id)};
             const part=await partsCollection.findOne(query);
             res.send(part);
+        })
+        app.get('/orders',async (req, res)=>{
+            const email=req.headers.email;
+            const query={email:email};
+            const orders=await orderCollection.find(query).toArray();
+            res.send(orders);
+
         })
         app.post('/orders',async(req,res)=>{
             const order=req.body;
