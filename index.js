@@ -59,7 +59,7 @@ async function run() {
             const user = await userCollection.find(query).toArray();
             res.send(user);
         })
-        app.put('/user/:email', async (req, res) => {
+        app.put('/user/:email',verifyJWT, async (req, res) => {
             const email = req.params.email;
             console.log(email);
             const user = req.body;
@@ -77,7 +77,7 @@ async function run() {
 
 
         });
-        app.put('/users/admin/:email', async (req, res) => {
+        app.put('/users/admin/:email',verifyJWT, async (req, res) => {
             const email = req.params.email;
             const filter = { email: email };
             const updateDoc = {
@@ -93,32 +93,32 @@ async function run() {
             partsCollection.insertOne(newPart);
             res.send(newPart);
         })
-        app.get('/parts/:id', async (req, res) => {
+        app.get('/parts/:id',verifyJWT, async (req, res) => {
             const id = req.params.id;
             const query = { _id: ObjectId(id) };
             const part = await partsCollection.findOne(query);
             res.send(part);
         })
-        app.get('/allOrders', async (req, res) => {
+        app.get('/allOrders',verifyJWT, async (req, res) => {
             const allOrders = await orderCollection.find({}).toArray();
             res.send(allOrders);
 
         })
-        app.get('/orders', async (req, res) => {
+        app.get('/orders',verifyJWT, async (req, res) => {
             const email = req.headers.email;
             const query = { email: email };
             const orders = await orderCollection.find(query).toArray();
             res.send(orders);
 
         })
-        app.get('/orders/:id', async (req, res) => {
+        app.get('/orders/:id',verifyJWT, async (req, res) => {
             const id = req.params.id;
             const query = { _id: ObjectId(id) };
             const orders = await orderCollection.findOne(query);
             res.send(orders);
 
         })
-        app.delete('/orders/:id', async (req, res) => {
+        app.delete('/orders/:id',verifyJWT, async (req, res) => {
             const id = req.params.id;
             const query = { _id: ObjectId(id) };
             const orders = await orderCollection.deleteOne(query);
