@@ -62,9 +62,7 @@ async function run() {
         })
         app.put('/user/:email', async (req, res) => {
             const email = req.params.email;
-            console.log(email);
             const user = req.body;
-            console.log("useris",user);
             const filter = { email: email };
             const options = { upsert: true };
             const updateDoc = {
@@ -97,7 +95,7 @@ async function run() {
             const id = req.params.id;
             const query = { _id: ObjectId(id) };
             const part = await partsCollection.findOne(query);
-            console.log(part);
+
             res.send(part);
         })
         app.get('/allOrders',verifyJWT,verifyAdmin, async (req, res) => {
@@ -206,6 +204,21 @@ async function run() {
         app.get("/reviews",async (req, res)=>{
             const reviews = await reviewsCollection.find({}).toArray();
             res.send(reviews);
+        })
+        app.put("/updated/:email",async(req, res)=>{
+            const email=req.params.email;
+            const user=req.body;
+            console.log("useer", email,user);
+            const filter = { email: email };
+            const options = { upsert: true };
+            const updateUser = {
+                $set: user
+
+            };
+            const update = await userCollection.updateOne(filter, updateUser, options)
+                res.send(update)
+
+
         })
 
     }
