@@ -76,6 +76,12 @@ async function run() {
 
 
         });
+        app.get('/admin/:email', async (req, res) => {
+            const email = req.params.email;
+            const user = await userCollection.findOne({ email: email });
+            const isAdmin = user.role === 'admin';
+            res.send({ admin: isAdmin })
+          })
         app.put('/users/admin/:email',verifyJWT,verifyAdmin, async (req, res) => {
             const email = req.params.email;
             const filter = { email: email };
@@ -182,13 +188,13 @@ async function run() {
             }
             else {
                 res.send({ error: "Quantity cannot be negative" })
-            }
+            } 
 
         })
         app.put("/orders/:id", async (req, res) => {
             const id = req.params.id;
             const filter = { _id: ObjectId(id) }
-            const option = { upsert: true };
+            const options = { upsert: true };
             
                 const updateOrder = {
                     $set: {
@@ -197,7 +203,7 @@ async function run() {
                     }
 
                 };
-                const update = await orderCollection.updateOne(filter, updateOrder, option)
+                const update = await orderCollection.updateOne(filter, updateOrder, options)
                 res.send({ success: true })
 
         })
@@ -208,7 +214,7 @@ async function run() {
         app.put("/updated/:email",async(req, res)=>{
             const email=req.params.email;
             const user=req.body;
-            console.log("useer", email,user);
+            // console.log("useer", email,user);
             const filter = { email: email };
             const options = { upsert: true };
             const updateUser = {
