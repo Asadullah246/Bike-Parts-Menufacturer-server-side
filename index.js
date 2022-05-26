@@ -23,7 +23,7 @@ function verifyJWT(req, res, next) {
         return res.status(401).send({ message: 'UnAuthorized access' });
     }
     const token = authHeader.split(' ')[1];
-    jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, function (err, decoded) {
+    jwt.verify(token, process.env.DB_JWT, function (err, decoded) {
         if (err) {
             return res.status(403).send({ message: 'Forbidden access' })
         }
@@ -38,6 +38,7 @@ async function run() {
         const partsCollection = client.db("bikePartsData").collection("parts");
         const orderCollection = client.db("bikePartsData").collection("orders");
         const userCollection = client.db("bikePartsData").collection("users");
+        const reviewsCollection = client.db("bikePartsData").collection("reviews");
 
         const verifyAdmin = async (req, res, next) => {
             const requester = req.decoded.email;
@@ -59,7 +60,7 @@ async function run() {
             const user = await userCollection.find(query).toArray();
             res.send(user);
         })
-        app.put('/user/:email',verifyJWT, async (req, res) => {
+        app.put('/user/:email', async (req, res) => {
             const email = req.params.email;
             console.log(email);
             const user = req.body;
@@ -77,7 +78,7 @@ async function run() {
 
 
         });
-        app.put('/users/admin/:email',verifyJWT, async (req, res) => {
+        app.put('/users/admin/:email',verifyJWT,verifyAdmin, async (req, res) => {
             const email = req.params.email;
             const filter = { email: email };
             const updateDoc = {
@@ -89,7 +90,6 @@ async function run() {
 
         app.post('/parts', (req, res) => {
             const newPart = req.body;
-            console.log(newPart);
             partsCollection.insertOne(newPart);
             res.send(newPart);
         })
@@ -97,14 +97,16 @@ async function run() {
             const id = req.params.id;
             const query = { _id: ObjectId(id) };
             const part = await partsCollection.findOne(query);
+            console.log(part);
             res.send(part);
         })
-        app.get('/allOrders',verifyJWT, async (req, res) => {
+        app.get('/allOrders',verifyJWT,verifyAdmin, async (req, res) => {
             const allOrders = await orderCollection.find({}).toArray();
             res.send(allOrders);
 
         })
         app.get('/orders',verifyJWT, async (req, res) => {
+            console.log(req.headers.authorization);
             const email = req.headers.email;
             const query = { email: email };
             const orders = await orderCollection.find(query).toArray();
@@ -130,7 +132,7 @@ async function run() {
             const insertOrder = await orderCollection.insertOne(order);
             res.send({ success: true });
         })
-        app.post('/create-payment-intent', async (req, res) => {
+        app.post('/create-payment-intent',verifyJWT, async (req, res) => {
             const service = req.body;
             const price = service.totalPrice;
             const amount = price * 100;
@@ -141,7 +143,7 @@ async function run() {
             });
             res.send({ clientSecret: paymentIntent.client_secret })
         });
-        app.patch('/manageOrder/:id', async (req, res) => {
+        app.patch('/manageOrder/:id',verifyJWT, async (req, res) => {
             const id = req.params.id;
             const payment = req.body;
             const filter = { _id: ObjectId(id) };
@@ -155,6 +157,12 @@ async function run() {
             // const result = await paymentCollection.insertOne(payment);
             const updatedBooking = await orderCollection.updateOne(filter, updatedDoc);
             res.send(updatedBooking);
+        })
+        app.delete("/parts/:id",verifyJWT,async(req,res)=>{
+            const id = req.params.id;
+            const query = { _id: ObjectId(id) };
+            const result = await partsCollection.deleteOne(query);
+            res.send(result);
         })
 
         app.put("/parts/:id", async (req, res) => {
@@ -178,6 +186,26 @@ async function run() {
                 res.send({ error: "Quantity cannot be negative" })
             }
 
+        })
+        app.put("/orders/:id", async (req, res) => {
+            const id = req.params.id;
+            const filter = { _id: ObjectId(id) }
+            const option = { upsert: true };
+            
+                const updateOrder = {
+                    $set: {
+                        status: "delivered"
+
+                    }
+
+                };
+                const update = await orderCollection.updateOne(filter, updateOrder, option)
+                res.send({ success: true })
+
+        })
+        app.get("/reviews",async (req, res)=>{
+            const reviews = await reviewsCollection.find({}).toArray();
+            res.send(reviews);
         })
 
     }
