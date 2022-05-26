@@ -5,6 +5,8 @@ const jwt = require('jsonwebtoken');
 require("dotenv").config();
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const port = process.env.PORT || 5000;
+const stripe = require("stripe")('sk_test_51L0j6aDZSfscydCvdmDR7jEtdXOHcrAWIz7Kj6zo4OWyex3G8YwXhEB5pW3w3KYkGukVmQtUmv4JisPPQfMhUqqa00suhUEnk7');
+
 
 // middleware 
 app.use(cors());
@@ -49,11 +51,51 @@ async function run() {
             res.send(orders);
 
         })
+        app.get('/orders/:id', async (req, res) => {
+            const id= req.params.id;
+            const query = { _id: ObjectId(id) };
+            const orders = await orderCollection.findOne(query);
+            res.send(orders);
+
+        })
+        app.delete('/orders/:id', async (req, res) => {
+            const id= req.params.id;
+            const query = { _id: ObjectId(id) };
+            const orders = await orderCollection.deleteOne(query);
+            res.send(orders);
+
+        })
         app.post('/orders', async (req, res) => {
             const order = req.body;
             const insertOrder = await orderCollection.insertOne(order);
             res.send({ success: true });
         })
+        app.post('/create-payment-intent', async(req, res) =>{
+            const service = req.body;
+            const price = service.totalPrice;
+            const amount = price*100;
+            const paymentIntent = await stripe.paymentIntents.create({
+              amount : amount,
+              currency: 'usd',
+              payment_method_types:['card']
+            });
+            res.send({clientSecret: paymentIntent.client_secret})
+          });
+          app.patch('/manageOrder/:id',async(req, res) =>{
+            const id  = req.params.id;
+            const payment = req.body;
+            const filter = {_id: ObjectId(id)};
+            const updatedDoc = {
+              $set: {
+                paid: true,
+                transactionId: payment.transactionId
+              }
+            }
+      
+            // const result = await paymentCollection.insertOne(payment);
+            const updatedBooking = await orderCollection.updateOne(filter, updatedDoc);
+            res.send(updatedBooking);
+          })
 
         app.put("/parts/:id", async (req, res) => {
             const id = req.params.id;
